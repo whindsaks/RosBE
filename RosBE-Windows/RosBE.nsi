@@ -38,6 +38,7 @@ SetCompressor /FINAL /SOLID lzma
 !include "RosSourceDir.nsh"
 !include "LogicLib.nsh"
 !include "WinVer.nsh"
+!include "x64.nsh"
 
 ;;
 ;; Read our custom page ini, remove previous version and make sure only
@@ -52,6 +53,16 @@ Function .onInit
     StrCmp $R0 0 +3
         MessageBox MB_OK|MB_ICONEXCLAMATION "The ${PRODUCT_NAME} v${PRODUCT_VERSION} installer is already running."
         Abort
+
+    !define /IfNDef PF_SSSE3_INSTRUCTIONS_AVAILABLE 36
+    System::Call 'KERNEL32::IsProcessorFeaturePresent(i${PF_SSSE3_INSTRUCTIONS_AVAILABLE})i.r0'
+    ${If} $0 = 0
+    ${AndIf} ${IsNativeIA32}
+        MessageBox MB_YESNO|MB_ICONEXCLAMATION "Unsupported CPU! Ninja requires SSSE3.$\n$\nAre you sure you want to continue?" /SD IDYES IDYES ignoreCPU
+            Abort
+        ignoreCPU:
+    ${EndIf}
+
     StrCpy $INSTDIR "C:\RosBE"
     Call UninstallPrevious
     !insertmacro INSTALLOPTIONS_EXTRACT "RosSourceDir.ini"
